@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "2o9kgGInhm4=",
+  "success": true,
+  "projectFilePath": "/Users/robertpalmer/Desktop copy/Coding/CSharp/UserManagementAPI./UserManagementAPI..csproj",
+  "expectedPackageFiles": [
+    "/Users/robertpalmer/.nuget/packages/microsoft.aspnetcore.openapi/9.0.4/microsoft.aspnetcore.openapi.9.0.4.nupkg.sha512",
+    "/Users/robertpalmer/.nuget/packages/microsoft.openapi/1.6.17/microsoft.openapi.1.6.17.nupkg.sha512"
+  ],
+  "logs": []
+}
