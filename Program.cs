@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Collections.Generic;
 using System.Linq;
-using System.ComponentModel.DataAnnotations; // Add for validation attributes
+using System.ComponentModel.DataAnnotations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +16,63 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options 
 });
 
 var app = builder.Build();
+
+// 1. Error-handling middleware (should be first)
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        var errorResponse = new { error = "Internal server error." };
+        await context.Response.WriteAsJsonAsync(errorResponse);
+        // Optional: log the exception details
+        Console.WriteLine($"[{DateTime.Now}] Unhandled exception: {ex}");
+    }
+});
+
+// 2. Authentication middleware (token validation)
+app.Use(async (context, next) =>
+{
+    const string validToken = "your-secret-token";
+
+    if (!context.Request.Headers.TryGetValue("Authorization", out var authHeader) ||
+        !authHeader.ToString().StartsWith("Bearer "))
+    {
+        context.Response.StatusCode = 401;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new { error = "Unauthorized: Missing or invalid token." });
+        return;
+    }
+
+    var token = authHeader.ToString().Substring("Bearer ".Length).Trim();
+
+    if (token != validToken)
+    {
+        context.Response.StatusCode = 401;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new { error = "Unauthorized: Invalid token." });
+        return;
+    }
+
+    await next();
+});
+
+// 3. Logging middleware (should be last of the custom middleware)
+app.Use(async (context, next) =>
+{
+    var method = context.Request.Method;
+    var path = context.Request.Path;
+
+    await next();
+
+    var statusCode = context.Response.StatusCode;
+    Console.WriteLine($"[{DateTime.Now}] {method} {path} responded {statusCode}");
+});
 
 // In-memory user store and fast lookup dictionaries
 var users = new List<User>();
@@ -31,7 +88,7 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    // Global exception handler for production
+    // Global exception handler for production (optional, can be removed if using custom error middleware)
     app.UseExceptionHandler(errorApp =>
     {
         errorApp.Run(async context =>
